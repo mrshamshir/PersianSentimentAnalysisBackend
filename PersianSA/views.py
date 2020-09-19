@@ -6,8 +6,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
-import json
+from Analyzer.analyzer import get_classes
 
 
 @api_view(['POST'])
@@ -15,11 +14,9 @@ import json
 # @permission_classes([IsAuthenticated])
 def get_result(request):
     result = request.data["comment"]
+    table, result = get_classes(result)
 
-
-
-
-    return Response(result, status=status.HTTP_200_OK)
+    return Response(table, status=status.HTTP_200_OK)
 
 
 def temp():
