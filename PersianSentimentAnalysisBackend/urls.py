@@ -23,5 +23,6 @@ router = routers.DefaultRouter()
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('PersianSA.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 
 ]

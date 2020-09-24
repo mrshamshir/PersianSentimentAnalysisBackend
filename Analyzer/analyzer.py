@@ -21,7 +21,7 @@ def get_classes(comment):
     result_table = nb.predict_proba([comment])[0]
     result_value = nb.predict([comment])
 
-    keys = ['خشمگین', 'عصبانی', 'خنثی', 'خوشحال', 'بسیار راضی']
+    keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table*100))
 
     return dictionary, result_value

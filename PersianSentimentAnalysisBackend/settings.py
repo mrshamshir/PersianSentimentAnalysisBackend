@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'PersianSA.apps.PersiansaConfig',
     'rest_framework',
+
 ]
 
 MIDDLEWARE = [

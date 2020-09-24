@@ -12,6 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import f1_score
 import _pickle as cPickle
 from hazm import *
+from collections import Counter
 
 # Preprocessing
 ## from StopWords_persian import stopwords_output
@@ -23,6 +24,10 @@ test = pd.read_csv('Dataset/test.csv', index_col=None, header=None, encoding="ut
 x_test = test[0]
 y_test = test[1]
 
+cnt = Counter(y_test)
+cnt = dict(cnt)
+print('test: ' + str(cnt))
+
 x_test = np.asarray(x_test)
 y_test = np.asarray(y_test)
 
@@ -30,12 +35,16 @@ original = pd.read_csv('Dataset/original.csv', index_col=None, header=None, enco
 balanced = pd.read_csv('Dataset/balanced.csv', index_col=None, header=None, encoding="utf-8")
 translation = pd.read_csv('dataset/translation.csv', index_col=None, header=None, encoding="utf-8")
 
-selected_dataset = balanced
+selected_dataset = original
 
 selected_dataset = selected_dataset.sample(frac=1).reset_index(drop=True)
 
 x_train = selected_dataset[0]
 y_train = selected_dataset[1]
+
+cnt = Counter(y_train)
+cnt = dict(cnt)
+print('train: ' + str(cnt))
 
 # Convert dataframes to numpy arrays
 x_train = np.asarray(x_train)
@@ -77,6 +86,8 @@ test_docs = np.empty_like(x_test)
 for index, document in enumerate(x_test):
     test_docs[index] = clean_doc(document)
 
+print(test_docs[3])
+
 # Make stop word set
 
 file = pd.read_csv('dataset/per_sw.csv', sep="\n", encoding="utf-8")
@@ -108,8 +119,8 @@ print('Naive Bayes Model: ', naive_score)
 predict_nb = naive_bayes.predict(x_test)
 
 # save the classifier
-with open('model/NB_classifier.pkl', 'wb') as fid:
-    cPickle.dump(naive_bayes, fid)
+# with open('model/NB_classifier.pkl', 'wb') as fid:
+#     cPickle.dump(naive_bayes, fid)
 
 # test and get result table for one single data for NB
 # x = 'حساسیت لمسی خود نمایشگر هم کاملا عالیست.'
@@ -142,8 +153,8 @@ print('Linear SVC Model: ', linear_svc_score)
 predict_svm = svm.predict(x_test)
 
 # save the classifier
-with open('model/SVM_classifier.pkl', 'wb') as fid:
-    cPickle.dump(svm, fid)
+# with open('model/SVM_classifier.pkl', 'wb') as fid:
+#     cPickle.dump(svm, fid)
 
 # test and get result table for one single data for SVM
 
@@ -152,23 +163,6 @@ with open('model/SVM_classifier.pkl', 'wb') as fid:
 # print(x)
 # print(y)
 
-## Stochastic Gradient Descent
-
-
-# SGD (Stochastic Gradient Descent) Model
-sgd = Pipeline([('vect', CountVectorizer(tokenizer=word_tokenize,
-                                         analyzer='word', ngram_range=(1, 2), min_df=min_df, lowercase=False)),
-                ('tfidf', TfidfTransformer(sublinear_tf=True)),
-                ('clf-svm', SGDClassifier(loss='hinge', penalty='l2',
-                                          alpha=1e-3, max_iter=1000))])
-sgd = sgd.fit(x_train, y_train)
-sgd_score = sgd.score(x_test, y_test)
-print('SGD Model: ', sgd_score)
-predict_sgd = sgd.predict(x_test)
-
-# save the classifier
-with open('model/SGD_classifier.pkl', 'wb') as fid:
-    cPickle.dump(sgd, fid)
 
 f1_NB = f1_score(y_test, predict_nb, average='weighted')
 print("F1 score of NB model:" + str(f1_NB))
@@ -176,5 +170,7 @@ print("F1 score of NB model:" + str(f1_NB))
 f1_SVM = f1_score(y_test, predict_svm, average='weighted')
 print("F1 score of SVM model:" + str(f1_SVM))
 
-f1_SGD = f1_score(y_test, predict_sgd, average='weighted')
-print("F1 score of SGD model:" + str(f1_SGD))
+
+
+## CNN
+
