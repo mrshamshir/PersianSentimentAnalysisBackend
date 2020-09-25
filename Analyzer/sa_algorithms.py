@@ -13,38 +13,28 @@ from sklearn.metrics import f1_score
 import _pickle as cPickle
 from hazm import *
 from collections import Counter
+from sklearn.model_selection import train_test_split
 
 # Import & Analyze Dataset
-test = pd.read_csv('Dataset/test.csv', index_col=None, header=None, encoding="utf-8")
+data = pd.read_csv('Dataset/new_org_test.csv', index_col=None, header=None, encoding="utf-8")
+x_data = data[0]
+y_data = data[1]
+x_data = np.asarray(x_data)
+y_data = np.asarray(y_data)
 
-x_test = test[0]
-y_test = test[1]
+# declare test size and train size for split
+test_size = 0.25
 
-cnt = Counter(y_test)
-cnt = dict(cnt)
-print('test: ' + str(cnt))
-
-x_test = np.asarray(x_test)
-y_test = np.asarray(y_test)
-
-original = pd.read_csv('Dataset/original.csv', index_col=None, header=None, encoding="utf-8")
-balanced = pd.read_csv('Dataset/balanced.csv', index_col=None, header=None, encoding="utf-8")
-translation = pd.read_csv('dataset/translation.csv', index_col=None, header=None, encoding="utf-8")
-
-selected_dataset = original
-
-selected_dataset = selected_dataset.sample(frac=1).reset_index(drop=True)
-
-x_train = selected_dataset[0]
-y_train = selected_dataset[1]
+x_train, x_test, y_train, y_test = train_test_split(
+    x_data, y_data, test_size=test_size, shuffle=True)
 
 cnt = Counter(y_train)
 cnt = dict(cnt)
-print('train: ' + str(cnt))
+print('new Train: ' + str(cnt))
 
-# Convert dataframes to numpy arrays
-x_train = np.asarray(x_train)
-y_train = np.asarray(y_train)
+cnt = Counter(y_test)
+cnt = dict(cnt)
+print('new Test: ' + str(cnt))
 
 # Preprocess
 
@@ -52,6 +42,11 @@ y_train = np.asarray(y_train)
 puncs = ['،', '.', ',', ':', ';', '"']
 normalizer = Normalizer()
 lemmatizer = Lemmatizer()
+
+# Make stop word set
+
+file = pd.read_csv('dataset/per_sw.csv', sep="\n", encoding="utf-8")
+stop_set = set(file.values.flatten())
 
 
 # turn a doc into clean tokens
@@ -64,7 +59,7 @@ def clean_doc(doc):
         for p in puncs:
             temp = temp.replace(p, '')
         tokens.append(temp)
-    # tokens = [w for w in tokens if not w in stop_set]    # Remove stop words
+    tokens = [w for w in tokens if not w in stop_set]  # Remove stop words
     tokens = [w for w in tokens if not len(w) <= 1]
     tokens = [w for w in tokens if not w.isdigit()]
     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # Lemmatize sentence words using Hazm Lemmatizer
@@ -81,12 +76,6 @@ for index, document in enumerate(x_train):
 test_docs = np.empty_like(x_test)
 for index, document in enumerate(x_test):
     test_docs[index] = clean_doc(document)
-
-
-# Make stop word set
-
-file = pd.read_csv('dataset/per_sw.csv', sep="\n", encoding="utf-8")
-stop_set = set(file.values.flatten())
 
 # Machine Learning Algorithms
 
@@ -165,7 +154,4 @@ print("F1 score of NB model:" + str(f1_NB))
 f1_SVM = f1_score(y_test, predict_svm, average='weighted')
 print("F1 score of SVM model:" + str(f1_SVM))
 
-
-
 ## CNN
-

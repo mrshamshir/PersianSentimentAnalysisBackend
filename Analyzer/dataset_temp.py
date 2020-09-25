@@ -37,11 +37,11 @@ def get_table(label, reset_index=False):
 def split_dataset(x, y, size=0.25):
     xr, xt, yr, yt = train_test_split(
         x, y, test_size=size, shuffle=True)
-    cnt = Counter(y_train)
+    cnt = Counter(yr)
     cnt = dict(cnt)
     print('new Train: ' + str(cnt))
 
-    cnt = Counter(y_test)
+    cnt = Counter(yt)
     cnt = dict(cnt)
     print('new Test: ' + str(cnt))
     return xr, xt, yr, yt
