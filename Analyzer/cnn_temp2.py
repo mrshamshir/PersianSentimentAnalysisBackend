@@ -184,3 +184,5 @@ model_cnn.save_weights('model_w.h5')
 # Evaluate model
 loss_cnn2, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
 print("Trained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
+
+plot_model(model_cnn, to_file='multiclass-cnn.png')

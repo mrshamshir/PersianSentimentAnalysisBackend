@@ -14,10 +14,6 @@ import _pickle as cPickle
 from hazm import *
 from collections import Counter
 
-# Preprocessing
-## from StopWords_persian import stopwords_output
-
-
 # Import & Analyze Dataset
 test = pd.read_csv('Dataset/test.csv', index_col=None, header=None, encoding="utf-8")
 
@@ -86,7 +82,6 @@ test_docs = np.empty_like(x_test)
 for index, document in enumerate(x_test):
     test_docs[index] = clean_doc(document)
 
-print(test_docs[3])
 
 # Make stop word set
 
