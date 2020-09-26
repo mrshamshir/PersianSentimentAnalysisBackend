@@ -36,9 +36,9 @@ def get_svm_classifier_result(comment, classifier, test_size):
 
 def get_cnn_classifier_result(comment, classifier, test_size):
     path = 'model/' + str(classifier) + '_classifier' + str(test_size) + ".h5"
-    cnn = load_model(path)
+    cnn = load_model(BASE_DIR / path)
 
-    with open('model/tokenizer.pkl', 'rb') as handle:
+    with open(BASE_DIR /'model/tokenizer.pkl', 'rb') as handle:
         tokenizer = cPickle.load(handle)
 
     max_length = 171
@@ -64,7 +64,7 @@ def preprocess_comment(comment):
     lemmatizer = Lemmatizer()
 
     # Make stop word set
-    file = pd.read_csv('dataset/per_sw.csv', sep="\n", encoding="utf-8")
+    file = pd.read_csv(BASE_DIR / 'dataset/per_sw.csv', sep="\n", encoding="utf-8")
     stop_set = set(file.values.flatten())
 
     comment = normalizer.normalize(comment)  # Normalize document using Hazm Normalizer
@@ -92,17 +92,17 @@ def get_classes(comment, classifier, test_size):
         return get_svm_classifier_result(comment, classifier, test_size)
     elif classifier == 'CNN':
         return get_cnn_classifier_result(comment, classifier, test_size)
+    return "okok", "areare"
 
-
-x = '"با سلام با اين آپديت هايي که براش مياد دورش نگذشته و تازگي داره و از خيلي گوشي‌هاي جديد هم بهتره.'
-dic, res = get_classes(x, 'NB', 25)
-print(dic)
-print(res)
-
-dic, res = get_classes(x, 'SVM', 25)
-print(dic)
-print(res)
-
-dic, res = get_classes(x, 'CNN', 25)
-print(dic)
-print(res)
+# x = '"با سلام با اين آپديت هايي که براش مياد دورش نگذشته و تازگي داره و از خيلي گوشي‌هاي جديد هم بهتره.'
+# dic, res = get_classes(x, 'NB', 25)
+# print(dic)
+# print(res)
+#
+# dic, res = get_classes(x, 'SVM', 25)
+# print(dic)
+# print(res)
+#
+# dic, res = get_classes(x, 'CNN', 25)
+# print(dic)
+# print(res)

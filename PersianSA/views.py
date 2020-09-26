@@ -14,7 +14,11 @@ from Analyzer.analyzer import get_classes
 # @permission_classes([IsAuthenticated])
 def get_result(request):
     result = request.data["comment"]
-    table, result = get_classes(result)
+    classifier = request.data["classifier"]
+    test_size = request.data["size"]
+
+    table, result = get_classes(result,classifier ,test_size )
+    # result = get_classes(result,classifier ,test_size )
 
     return Response(table, status=status.HTTP_200_OK)
 
