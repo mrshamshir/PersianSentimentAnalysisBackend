@@ -37,40 +37,28 @@ from hazm import *
 
 import matplotlib.pyplot as plt
 from keras.utils import plot_model
-# Measuring metrics
-from sklearn.metrics import f1_score
 
-# Import & Analyze Dataset
-test = pd.read_csv('Dataset/test.csv', index_col=None, header=None, encoding="utf-8")
+with open('dataset/x_test.pkl', 'rb') as handle:
+    x_test = cPickle.load(handle)
 
-x_test = test[0]
-y_test = test[1]
+with open('dataset/y_test.pkl', 'rb') as handle:
+    y_test = cPickle.load(handle)
 
 cnt = Counter(y_test)
 cnt = dict(cnt)
-print('test: ' + str(cnt))
+class_names = {k: v for k, v in sorted(cnt.items(), key=lambda item: item[1], reverse=True)}
+print('test: ' + str(class_names))
 
-x_test = np.asarray(x_test)
-y_test = np.asarray(y_test)
+with open('dataset/x_train.pkl', 'rb') as handle:
+    x_train = cPickle.load(handle)
 
-original = pd.read_csv('Dataset/original.csv', index_col=None, header=None, encoding="utf-8")
-balanced = pd.read_csv('Dataset/balanced.csv', index_col=None, header=None, encoding="utf-8")
-translation = pd.read_csv('dataset/translation.csv', index_col=None, header=None, encoding="utf-8")
-
-selected_dataset = original
-
-selected_dataset = selected_dataset.sample(frac=1).reset_index(drop=True)
-
-x_train = selected_dataset[0]
-y_train = selected_dataset[1]
+with open('dataset/y_train.pkl', 'rb') as handle:
+    y_train = cPickle.load(handle)
 
 cnt = Counter(y_train)
 cnt = dict(cnt)
-print('train: ' + str(cnt))
-
-# Convert dataframes to numpy arrays
-x_train = np.asarray(x_train)
-y_train = np.asarray(y_train)
+class_names = {k: v for k, v in sorted(cnt.items(), key=lambda item: item[1], reverse=True)}
+print('train: ' + str(class_names))
 
 # Preprocess
 
@@ -78,6 +66,9 @@ y_train = np.asarray(y_train)
 puncs = ['،', '.', ',', ':', ';', '"']
 normalizer = Normalizer()
 lemmatizer = Lemmatizer()
+
+file = pd.read_csv('dataset/per_sw.csv', sep="\n", encoding="utf-8")
+stop_set = set(file.values.flatten())
 
 
 # turn a doc into clean tokens
@@ -90,31 +81,24 @@ def clean_doc(doc):
         for p in puncs:
             temp = temp.replace(p, '')
         tokens.append(temp)
-    # tokens = [w for w in tokens if not w in stop_set]    # Remove stop words
+    tokens = [w for w in tokens if not w in stop_set]  # Remove stop words
     tokens = [w for w in tokens if not len(w) <= 1]
     tokens = [w for w in tokens if not w.isdigit()]
     tokens = [lemmatizer.lemmatize(w) for w in tokens]  # Lemmatize sentence words using Hazm Lemmatizer
     tokens = ' '.join(tokens)
     return tokens
 
+with open('dataset/test_docs.pkl', 'rb') as handle:
+    test_docs = cPickle.load(handle)
 
-# Apply preprocessing step to training data
-train_docs = np.empty_like(x_train)
-for index, document in enumerate(x_train):
-    train_docs[index] = clean_doc(document)
+with open('dataset/train_docs.pkl', 'rb') as handle:
+    train_docs = cPickle.load(handle)
 
-# Applying preprocessing step to test data
-test_docs = np.empty_like(x_test)
-for index, document in enumerate(x_test):
-    test_docs[index] = clean_doc(document)
+# num_words = 2000
 
-num_words = 2000
 
-# Create the tokenizer
-tokenizer = Tokenizer(num_words=num_words)
-
-# fFt the tokenizer on the training documents
-tokenizer.fit_on_texts(train_docs)
+with open('model/tokenizer.pkl', 'rb') as handle:
+    tokenizer = cPickle.load(handle)
 
 # Find maximum length of training sentences
 max_length = max([len(s.split()) for s in train_docs])
@@ -134,23 +118,25 @@ encoded_docs = tokenizer.texts_to_sequences(test_docs)
 x_test_padded = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
 
 # Prepare labels for categorical prediction
-categorical_y_train = to_categorical(y_train, 5)
-categorical_y_test = to_categorical(y_test, 5)
+categorical_y_train = to_categorical(y_train + 2, 5)
+categorical_y_test = to_categorical(y_test + 2, 5)
 
-new_model = load_model('my_model_weights.h5')
+model_cnn = load_model('model/CNN_classifier25.h5')
 
-new_model.summary()
-new_model.get_weights()
-print(new_model.optimizer)
-
-loss_cnn, acc_cnn = new_model.evaluate(x_test_padded, categorical_y_test, verbose=0)
+loss_cnn, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
 print("Trained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
 
-class_names = {k: v for k, v in sorted(cnt.items(), key=lambda item: item[1], reverse=True)}
-print(class_names)
+# class_names = {k: v for k, v in sorted(cnt.items(), key=lambda item: item[1], reverse=True)}
+# print(class_names)
 
-# for i in range(0, 10):
+# loss, acc = model_cnn.evaluate(x_test_padded[237:247], categorical_y_test[237:247])
+# print("Sample Trained model, accuracy: {:5.2f}%".format(100 * acc))
+
+# for i in range(237, 247):
 #     predictions = model_cnn.predict(tf.expand_dims(x_test_padded[i], 0))
 #     classes = np.argmax(predictions, axis=1)
-#     print("real: " + str(y_test[i]) + " ,  label : " + str(classes[0])
+#     print("real: " + str(y_test[i]) + " ,  label : " + str(classes[0] - 2) +
+#           ' ,  cat : ' + str(categorical_y_test[i])
 #           + " ,  predict: " + str((predictions[0] * 100).astype(int)))
+# print(x_test[237])
+# print(x_test_padded[310])

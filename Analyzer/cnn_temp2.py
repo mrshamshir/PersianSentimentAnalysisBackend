@@ -36,7 +36,7 @@ from keras.layers import Dense
 from keras.models import model_from_json
 
 # Preprocessing
-
+import _pickle as cPickle
 from hazm import *
 # Visualization
 
@@ -121,6 +121,15 @@ tokenizer = Tokenizer(num_words=num_words)
 # fFt the tokenizer on the training documents
 tokenizer.fit_on_texts(train_docs)
 
+
+# with open('model/tokenizer.pkl', 'rb') as handle:
+#     tokenizer = cPickle.load(handle)
+
+# save fitted tokenizer
+
+with open('model/tokenizer.pkl', 'wb') as fid:
+    cPickle.dump(tokenizer, fid)
+
 # Find maximum length of training sentences
 max_length = max([len(s.split()) for s in train_docs])
 
@@ -138,9 +147,12 @@ encoded_docs = tokenizer.texts_to_sequences(test_docs)
 # Pad testing sequences
 x_test_padded = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
 
+# with open('model/tokenizer.pkl', 'wb') as fid:
+#     cPickle.dump(tokenizer, fid)
+
 # Prepare labels for categorical prediction
-categorical_y_train = to_categorical(y_train, 5)
-categorical_y_test = to_categorical(y_test, 5)
+categorical_y_train = to_categorical(y_train + 2, 5)
+categorical_y_test = to_categorical(y_test + 2, 5)
 
 model_cnn = Sequential()
 model_cnn.add(Embedding(vocab_size, 300, input_length=max_length))
@@ -178,11 +190,16 @@ hist_cnn = model_cnn.fit(x_train_padded,
                          )
 
 print("Saved model to disk")
-model_cnn.save('my_model_weights.h5')
-model_cnn.save_weights('model_w.h5')
+model_cnn.save('model/test.h5')
 
 # Evaluate model
 loss_cnn2, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
 print("Trained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
 
-plot_model(model_cnn, to_file='multiclass-cnn.png')
+# plot_model(model_cnn, to_file='multiclass-cnn.png')
+
+loaded_model = load_model('model/test.h5')
+
+# Evaluate model
+loss_cnn23, acc2_cnn = loaded_model.evaluate(x_test_padded, categorical_y_test, verbose=0)
+print("Loaded Trained model, accuracy: {:5.2f}%".format(100 * acc2_cnn))

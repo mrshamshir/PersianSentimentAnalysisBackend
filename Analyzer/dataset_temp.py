@@ -49,12 +49,18 @@ def split_dataset(x, y, size=0.25):
 
 # Import & Analyze Dataset
 
+x_mytest_, y_mytest_ = get_table('mytest')
 x_test_, y_test_ = get_table('test')
 x_original, y_original = get_table('original', True)
 x_balanced, y_balanced = get_table('balanced')
 x_translation, y_translation = get_table('translation')
 x, y = get_table('new_org_test')
 x_train, x_test, y_train, y_test = split_dataset(x, y)
+
+
+
+
+
 
 # Preprocess
 

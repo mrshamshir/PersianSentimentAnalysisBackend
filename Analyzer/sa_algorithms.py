@@ -13,28 +13,83 @@ from sklearn.metrics import f1_score
 import _pickle as cPickle
 from hazm import *
 from collections import Counter
+from os import path
 from sklearn.model_selection import train_test_split
+import codecs
 
-# Import & Analyze Dataset
-data = pd.read_csv('Dataset/new_org_test.csv', index_col=None, header=None, encoding="utf-8")
-x_data = data[0]
-y_data = data[1]
-x_data = np.asarray(x_data)
-y_data = np.asarray(y_data)
+# Keras
+from keras import optimizers
+
+from keras.layers import Dense, Input, Embedding, Dropout
+from keras.layers import GlobalMaxPool1D, MaxPooling1D, GlobalMaxPooling1D
+
+from keras.layers.convolutional import Conv1D
+from keras.utils.np_utils import to_categorical
+from keras.metrics import categorical_accuracy
+from keras.utils import plot_model
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import tensorflow as tf
+import os
+from keras.models import Sequential, load_model
+from keras.layers import Dense
+from keras.models import model_from_json
+
+
+def get_table(label, reset_index=False):
+    path = 'Dataset/' + str(label) + '.csv'
+    data = pd.read_csv(path, index_col=None, header=None, encoding="utf-8")
+    if reset_index:
+        data = data.sample(frac=1).reset_index(drop=True)
+    x_data = data[0]
+    y_data = data[1]
+
+    cnt = Counter(y_data)
+    cnt = dict(cnt)
+    class_names = {k: v for k, v in sorted(cnt.items(), key=lambda item: item[1], reverse=True)}
+    print(str(label) + ': ' + str(class_names))
+    x_data = np.asarray(x_data)
+    y_data = np.asarray(y_data)
+    return x_data, y_data
+
+
+def split_dataset(x, y, size=0.25):
+    xr, xt, yr, yt = train_test_split(
+        x, y, test_size=size, shuffle=True)
+    cnt = Counter(yr)
+    cnt = dict(cnt)
+    print('new Train: ' + str(cnt))
+
+    cnt = Counter(yt)
+    cnt = dict(cnt)
+    print('new Test: ' + str(cnt))
+    return xr, xt, yr, yt
+
 
 # declare test size and train size for split
 test_size = 0.25
 
-x_train, x_test, y_train, y_test = train_test_split(
-    x_data, y_data, test_size=test_size, shuffle=True)
+# Import & Analyze Dataset
 
-cnt = Counter(y_train)
-cnt = dict(cnt)
-print('new Train: ' + str(cnt))
+x, y = get_table('new_org_test')
+x_train, x_test, y_train, y_test = split_dataset(x, y, test_size)
 
-cnt = Counter(y_test)
-cnt = dict(cnt)
-print('new Test: ' + str(cnt))
+with open('dataset/x_test.pkl', 'wb') as fid:
+    cPickle.dump(x_test, fid)
+
+with open('dataset/y_test.pkl', 'wb') as fid:
+    cPickle.dump(y_test, fid)
+
+with open('dataset/x_train.pkl', 'wb') as fid:
+    cPickle.dump(x_train, fid)
+
+with open('dataset/y_train.pkl', 'wb') as fid:
+    cPickle.dump(y_train, fid)
+
+
+def preprocess():
+    pass
+
 
 # Preprocess
 
@@ -77,45 +132,87 @@ test_docs = np.empty_like(x_test)
 for index, document in enumerate(x_test):
     test_docs[index] = clean_doc(document)
 
+with open('dataset/test_docs.pkl', 'wb') as fid:
+    cPickle.dump(test_docs, fid)
+
+with open('dataset/train_docs.pkl', 'wb') as fid:
+    cPickle.dump(train_docs, fid)
+
 # Machine Learning Algorithms
 
 # When building the vocabulary ignore terms that have a document frequency strictly lower than
 # the given threshold. This value is also called cut-off in the literature.
 min_df = 1
 
+num_words = 2000
 
-# Tokenize function used in Vectorizer
-def tokenize(text):
-    return word_tokenize(text)
+# Create the tokenizer
+tokenizer = Tokenizer(num_words=num_words)
+
+# fFt the tokenizer on the training documents
+tokenizer.fit_on_texts(train_docs)
+
+# save fitted tokenizer
+
+with open('model/tokenizer.pkl', 'wb') as fid:
+    cPickle.dump(tokenizer, fid)
+
+# Find maximum length of training sentences
+max_length = max([len(s.split()) for s in train_docs])
+
+# Embed training sequences
+encoded_docs = tokenizer.texts_to_sequences(train_docs)
+
+# Pad embeded training sequences
+x_train_padded = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
+
+# Define vocabulary size (largest integer value)
+vocab_size = len(tokenizer.word_index)
+
+# Embed testing sequences
+encoded_docs = tokenizer.texts_to_sequences(test_docs)
+# Pad testing sequences
+x_test_padded = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
+
+# Prepare labels for categorical prediction
+categorical_y_train = to_categorical(y_train + 2, 5)
+categorical_y_test = to_categorical(y_test + 2, 5)
 
 
 ## Naive Bayes
 
 
 # (Multinomial) Naive Bayes Model
-naive_bayes = Pipeline([('vect', CountVectorizer(tokenizer=word_tokenize,
-                                                 analyzer='word', ngram_range=(1, 2), min_df=min_df, lowercase=False)),
-                        ('tfidf', TfidfTransformer(sublinear_tf=True)),
-                        ('clf', MultinomialNB())])
-naive_bayes = naive_bayes.fit(x_train, y_train)
-naive_score = naive_bayes.score(x_test, y_test)
-print('Naive Bayes Model: ', naive_score)
-predict_nb = naive_bayes.predict(x_test)
+
+def nb_trainer():
+    naive_bayes = Pipeline([('vect', CountVectorizer(tokenizer=word_tokenize,
+                                                     analyzer='word', ngram_range=(1, 2), min_df=min_df,
+                                                     lowercase=False)),
+                            ('tfidf', TfidfTransformer(sublinear_tf=True)),
+                            ('clf', MultinomialNB())])
+    naive_bayes = naive_bayes.fit(x_train, y_train)
+    naive_score = naive_bayes.score(x_test, y_test)
+    print('Naive Bayes Model: ', naive_score)
+    predict_nb = naive_bayes.predict(x_test)
+    return naive_bayes, naive_score, predict_nb
+
+
+naive_bayes, naive_score, predict_nb = nb_trainer()
 
 # save the classifier
-# with open('model/NB_classifier.pkl', 'wb') as fid:
-#     cPickle.dump(naive_bayes, fid)
+
+with open('model/NB_classifier' + str(int(test_size * 100)) + '.pkl', 'wb') as fid:
+    cPickle.dump(naive_bayes, fid)
+
 
 # test and get result table for one single data for NB
 # x = 'حساسیت لمسی خود نمایشگر هم کاملا عالیست.'
-# y = 'سرعت اجرا بسيار بالا است و مصرف باتري نيز مناسب است.'
-# z = 'فارسيش هم عاليه اين گوشي تازه اومده.'
-# w = 'این به این معناست که از صفحه نمایش آن نمی‌توان انتظار تصویر چندان خوبی در مقابل صفحه نمایش‌های Super AMOLED و یا Super Clear LCD را داشت.'
-# temp = naive_bayes.predict_proba([y, z, w])
-#
-# print(naive_bayes.classes_)
-# print(naive_bayes.predict([y, z, w]))
-# print(temp)
+# temp = naive_bayes.predict_proba([x])[0]
+# print("naive bayes classes: " + str(naive_bayes.classes_))
+# print("naive bayes prediction for sample: " + str(naive_bayes.predict([x])))
+# print(temp * 100)
+# xx = naive_bayes.decision_function([x])
+# print(xx)
 
 
 ## Support Vector Machine
@@ -123,28 +220,32 @@ predict_nb = naive_bayes.predict(x_test)
 
 # Linear Support Vector Machine Model
 
+def svm_trainer():
+    svm = Pipeline([('vect', CountVectorizer(tokenizer=word_tokenize,
+                                             analyzer='word', ngram_range=(1, 2),
+                                             min_df=min_df, lowercase=False)),
+                    ('tfidf', TfidfTransformer(sublinear_tf=True)),
+                    ('clf-svm', LinearSVC(loss='hinge', penalty='l2',
+                                          max_iter=1000))])
 
-svm = Pipeline([('vect', CountVectorizer(tokenizer=word_tokenize,
-                                         analyzer='word', ngram_range=(1, 2),
-                                         min_df=min_df, lowercase=False)),
-                ('tfidf', TfidfTransformer(sublinear_tf=True)),
-                ('clf-svm', LinearSVC(loss='hinge', penalty='l2',
-                                      max_iter=1000))])
+    svm = svm.fit(x_train, y_train)
+    linear_svc_score = svm.score(x_test, y_test)
+    print('Linear SVC Model: ', linear_svc_score)
+    predict_svm = svm.predict(x_test)
+    return svm, linear_svc_score, predict_svm
 
-svm = svm.fit(x_train, y_train)
-linear_svc_score = svm.score(x_test, y_test)
-print('Linear SVC Model: ', linear_svc_score)
-predict_svm = svm.predict(x_test)
+
+svm, linear_svc_score, predict_svm = svm_trainer()
 
 # save the classifier
-# with open('model/SVM_classifier.pkl', 'wb') as fid:
-#     cPickle.dump(svm, fid)
+with open('model/SVM_classifier' + str(int(test_size * 100)) + '.pkl', 'wb') as fid:
+    cPickle.dump(svm, fid)
 
 # test and get result table for one single data for SVM
 
 # x = svm.decision_function([x_test[0]])
 # y = svm.predict([x_test[0]])
-# print(x)
+# print("old svm: " + str(x))
 # print(y)
 
 
@@ -155,3 +256,51 @@ f1_SVM = f1_score(y_test, predict_svm, average='weighted')
 print("F1 score of SVM model:" + str(f1_SVM))
 
 ## CNN
+
+num_words = 2000
+
+
+def cnn_trainer():
+    model_cnn = Sequential()
+    model_cnn.add(Embedding(vocab_size, 300, input_length=max_length))
+    model_cnn.add(Conv1D(filters=64, kernel_size=4, activation='relu', padding='same'))
+    model_cnn.add(MaxPooling1D(pool_size=2))
+    model_cnn.add(Conv1D(filters=64, kernel_size=8, activation='relu', padding='same'))
+    model_cnn.add(MaxPooling1D(pool_size=2))
+    model_cnn.add(Conv1D(filters=64, kernel_size=16, activation='relu', padding='same'))
+    model_cnn.add(GlobalMaxPooling1D())
+    model_cnn.add(Dropout(0.1))
+    model_cnn.add(Dense(500, activation="sigmoid"))
+    model_cnn.add(Dense(5, activation='softmax'))
+    model_cnn.compile(loss='categorical_crossentropy',
+                      optimizer='adam',
+                      metrics=[categorical_accuracy])
+
+    model_cnn.summary()
+
+    return model_cnn
+
+
+model_cnn = cnn_trainer()
+batch_size_cnn = 64
+epochs_cnn = 8
+
+# Evaluate model
+loss_cnn, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
+print("Untrained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
+
+# # Train model
+hist_cnn = model_cnn.fit(x_train_padded,
+                         categorical_y_train,
+                         batch_size=batch_size_cnn,
+                         epochs=epochs_cnn,
+                         validation_data=(x_test_padded, categorical_y_test),
+                         shuffle=True,
+                         )
+
+# save model
+model_cnn.save('model/CNN_classifier' + str(int(test_size * 100)) + '.h5')
+
+# Evaluate model
+loss_cnn2, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
+print("Trained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
