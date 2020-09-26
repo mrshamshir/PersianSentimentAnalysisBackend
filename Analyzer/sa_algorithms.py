@@ -1,39 +1,32 @@
 # General
 import numpy as np
 import pandas as pd
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # sklearn
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
-from sklearn.linear_model import SGDClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
-from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import f1_score
 import _pickle as cPickle
 from hazm import *
 from collections import Counter
-from os import path
 from sklearn.model_selection import train_test_split
-import codecs
 
 # Keras
-from keras import optimizers
 
-from keras.layers import Dense, Input, Embedding, Dropout
-from keras.layers import GlobalMaxPool1D, MaxPooling1D, GlobalMaxPooling1D
+from keras.layers import Dense, Embedding, Dropout
+from keras.layers import MaxPooling1D, GlobalMaxPooling1D
 
 from keras.layers.convolutional import Conv1D
 from keras.utils.np_utils import to_categorical
 from keras.metrics import categorical_accuracy
-from keras.utils import plot_model
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-import tensorflow as tf
-import os
 from keras.models import Sequential, load_model
-from keras.layers import Dense
-from keras.models import model_from_json
 
 
 def get_table(label, reset_index=False):
@@ -53,7 +46,7 @@ def get_table(label, reset_index=False):
     return x_data, y_data
 
 
-def split_dataset(x, y, size=0.25):
+def split_dataset(x, y, size):
     xr, xt, yr, yt = train_test_split(
         x, y, test_size=size, shuffle=True)
     cnt = Counter(yr)
@@ -68,6 +61,8 @@ def split_dataset(x, y, size=0.25):
 
 # declare test size and train size for split
 test_size = 0.25
+test_num = 10
+
 
 # Import & Analyze Dataset
 
@@ -85,11 +80,6 @@ with open('dataset/x_train.pkl', 'wb') as fid:
 
 with open('dataset/y_train.pkl', 'wb') as fid:
     cPickle.dump(y_train, fid)
-
-
-def preprocess():
-    pass
-
 
 # Preprocess
 
@@ -154,7 +144,7 @@ tokenizer.fit_on_texts(train_docs)
 
 # save fitted tokenizer
 
-with open('model/tokenizer.pkl', 'wb') as fid:
+with open('model/tokenizer' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.pkl', 'wb') as fid:
     cPickle.dump(tokenizer, fid)
 
 # Find maximum length of training sentences
@@ -201,18 +191,8 @@ naive_bayes, naive_score, predict_nb = nb_trainer()
 
 # save the classifier
 
-with open('model/NB_classifier' + str(int(test_size * 100)) + '.pkl', 'wb') as fid:
+with open('model/NB_classifier' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.pkl', 'wb') as fid:
     cPickle.dump(naive_bayes, fid)
-
-
-# test and get result table for one single data for NB
-# x = 'حساسیت لمسی خود نمایشگر هم کاملا عالیست.'
-# temp = naive_bayes.predict_proba([x])[0]
-# print("naive bayes classes: " + str(naive_bayes.classes_))
-# print("naive bayes prediction for sample: " + str(naive_bayes.predict([x])))
-# print(temp * 100)
-# xx = naive_bayes.decision_function([x])
-# print(xx)
 
 
 ## Support Vector Machine
@@ -238,15 +218,10 @@ def svm_trainer():
 svm, linear_svc_score, predict_svm = svm_trainer()
 
 # save the classifier
-with open('model/SVM_classifier' + str(int(test_size * 100)) + '.pkl', 'wb') as fid:
+with open('model/SVM_classifier' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.pkl', 'wb') as fid:
     cPickle.dump(svm, fid)
 
 # test and get result table for one single data for SVM
-
-# x = svm.decision_function([x_test[0]])
-# y = svm.predict([x_test[0]])
-# print("old svm: " + str(x))
-# print(y)
 
 
 f1_NB = f1_score(y_test, predict_nb, average='weighted')
@@ -276,7 +251,8 @@ def cnn_trainer():
                       optimizer='adam',
                       metrics=[categorical_accuracy])
 
-    model_cnn.summary()
+    # model_cnn.summary()
+    print("Total params: " + str(model_cnn.count_params()))
 
     return model_cnn
 
@@ -296,10 +272,11 @@ hist_cnn = model_cnn.fit(x_train_padded,
                          epochs=epochs_cnn,
                          validation_data=(x_test_padded, categorical_y_test),
                          shuffle=True,
+                         verbose=0
                          )
 
 # save model
-model_cnn.save('model/CNN_classifier' + str(int(test_size * 100)) + '.h5')
+model_cnn.save('model/CNN_classifier' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.h5')
 
 # Evaluate model
 loss_cnn2, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)

@@ -17,7 +17,7 @@ def get_result(request):
     classifier = request.data["classifier"]
     test_size = request.data["size"]
 
-    table, result = get_classes(result,classifier ,test_size )
+    table, result = get_classes(result, classifier, test_size)
     # result = get_classes(result,classifier ,test_size )
 
     return Response(table, status=status.HTTP_200_OK)

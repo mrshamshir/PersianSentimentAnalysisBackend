@@ -38,7 +38,7 @@ def get_cnn_classifier_result(comment, classifier, test_size):
     path = 'model/' + str(classifier) + '_classifier' + str(test_size) + ".h5"
     cnn = load_model(BASE_DIR / path)
 
-    with open(BASE_DIR /'model/tokenizer.pkl', 'rb') as handle:
+    with open(BASE_DIR / 'model/tokenizer.pkl', 'rb') as handle:
         tokenizer = cPickle.load(handle)
 
     max_length = 171
@@ -93,16 +93,3 @@ def get_classes(comment, classifier, test_size):
     elif classifier == 'CNN':
         return get_cnn_classifier_result(comment, classifier, test_size)
     return "okok", "areare"
-
-# x = '"با سلام با اين آپديت هايي که براش مياد دورش نگذشته و تازگي داره و از خيلي گوشي‌هاي جديد هم بهتره.'
-# dic, res = get_classes(x, 'NB', 25)
-# print(dic)
-# print(res)
-#
-# dic, res = get_classes(x, 'SVM', 25)
-# print(dic)
-# print(res)
-#
-# dic, res = get_classes(x, 'CNN', 25)
-# print(dic)
-# print(res)
