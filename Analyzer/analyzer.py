@@ -18,10 +18,12 @@ def get_nb_classifier_result(comment, classifier, test_size):
     with open(BASE_DIR / path, 'rb') as fid:
         nb = cPickle.load(fid)
     result_table = nb.predict_proba([comment])[0]
-    result_value = nb.predict([comment])
+    result_value = nb.predict([comment])[0]
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table * 100))
-    return dictionary, result_value
+    dictionary['final'] = result_value
+    print(result_value)
+    return dictionary
 
 
 def get_svm_classifier_result(comment, classifier, test_size):
@@ -30,10 +32,11 @@ def get_svm_classifier_result(comment, classifier, test_size):
     with open(BASE_DIR / path, 'rb') as fid:
         svm = cPickle.load(fid)
     result_table = svm.decision_function([comment])[0]
-    result_value = svm.predict([comment])
+    result_value = svm.predict([comment])[0]
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table))
-    return dictionary, result_value
+    dictionary['final'] = result_value
+    return dictionary
 
 
 def get_cnn_classifier_result(comment, classifier, test_size):
@@ -58,7 +61,8 @@ def get_cnn_classifier_result(comment, classifier, test_size):
 
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table))
-    return dictionary, result_value
+    dictionary['final'] = result_value[0]
+    return dictionary
 
 
 def preprocess_comment(comment):
@@ -95,4 +99,4 @@ def get_classes(comment, classifier, test_size):
         return get_svm_classifier_result(comment, classifier, test_size)
     elif classifier == 'CNN':
         return get_cnn_classifier_result(comment, classifier, test_size)
-    return "okok", "areare"
+    return "okok"

@@ -14,12 +14,10 @@ from Analyzer.analyzer import get_classes
 # @authentication_classes([TokenAuthentication])
 # @permission_classes([IsAuthenticated])
 def get_result(request):
-
     comment = request.data["comment"]
     classifier = request.data["classifier"]
     test_size = request.data["percentage"]
 
-    table, result = get_classes(comment, classifier, test_size)
-    # result = get_classes(result,classifier ,test_size )
+    table = get_classes(comment, classifier, test_size)
 
     return Response(table, status=status.HTTP_200_OK)
