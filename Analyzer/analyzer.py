@@ -21,8 +21,9 @@ def get_nb_classifier_result(comment, classifier, test_size):
     result_value = nb.predict([comment])[0]
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table * 100))
+    for temp in dictionary:
+        dictionary[temp] = round(dictionary[temp], 2)
     dictionary['final'] = result_value
-    print(result_value)
     return dictionary
 
 
@@ -32,9 +33,12 @@ def get_svm_classifier_result(comment, classifier, test_size):
     with open(BASE_DIR / path, 'rb') as fid:
         svm = cPickle.load(fid)
     result_table = svm.decision_function([comment])[0]
+
     result_value = svm.predict([comment])[0]
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table))
+    for temp in dictionary:
+        dictionary[temp] = round(dictionary[temp], 2)
     dictionary['final'] = result_value
     return dictionary
 
@@ -59,8 +63,13 @@ def get_cnn_classifier_result(comment, classifier, test_size):
     result_value = classes - 2
     result_table = (predictions[0] * 100)
 
+    result_table = result_table * 100
+    result_table = result_table.astype(int)
+    result_table = result_table / 100
+
     keys = ['Furious', 'Angry', 'Neutral', 'Happy', 'Delighted']
     dictionary = dict(zip(keys, result_table))
+
     dictionary['final'] = result_value[0]
     return dictionary
 
