@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 # sklearn
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -27,6 +25,8 @@ from keras.metrics import categorical_accuracy
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential, load_model
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def get_table(label, reset_index=False):
@@ -62,7 +62,6 @@ def split_dataset(x, y, size):
 # declare test size and train size for split
 test_size = 0.25
 test_num = 10
-
 
 # Import & Analyze Dataset
 
