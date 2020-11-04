@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import os
-
+import matplotlib.pyplot as plt
 # sklearn
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -24,9 +24,9 @@ from keras.utils.np_utils import to_categorical
 from keras.metrics import categorical_accuracy
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.models import Sequential, load_model
+from keras.models import Sequential
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
 
 
 def get_table(label, reset_index=False):
@@ -60,8 +60,8 @@ def split_dataset(x, y, size):
 
 
 # declare test size and train size for split
-test_size = 0.25
-test_num = 10
+test_size = 0.10
+test_num = 1
 
 # Import & Analyze Dataset
 
@@ -181,7 +181,7 @@ def nb_trainer():
                             ('clf', MultinomialNB())])
     naive_bayes = naive_bayes.fit(x_train, y_train)
     naive_score = naive_bayes.score(x_test, y_test)
-    print('Naive Bayes Model: ', naive_score)
+
     predict_nb = naive_bayes.predict(x_test)
     return naive_bayes, naive_score, predict_nb
 
@@ -209,7 +209,7 @@ def svm_trainer():
 
     svm = svm.fit(x_train, y_train)
     linear_svc_score = svm.score(x_test, y_test)
-    print('Linear SVC Model: ', linear_svc_score)
+
     predict_svm = svm.predict(x_test)
     return svm, linear_svc_score, predict_svm
 
@@ -223,11 +223,7 @@ with open('model/SVM_classifier' + '_' + str(int(test_size * 100)) + '_' + str(t
 # test and get result table for one single data for SVM
 
 
-f1_NB = f1_score(y_test, predict_nb, average='weighted')
-print("F1 score of NB model:" + str(f1_NB))
 
-f1_SVM = f1_score(y_test, predict_svm, average='weighted')
-print("F1 score of SVM model:" + str(f1_SVM))
 
 ## CNN
 
@@ -258,7 +254,7 @@ def cnn_trainer():
 
 model_cnn = cnn_trainer()
 batch_size_cnn = 64
-epochs_cnn = 8
+epochs_cnn = 2
 
 # Evaluate model
 loss_cnn, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
@@ -279,4 +275,109 @@ model_cnn.save('model/CNN_classifier' + '_' + str(int(test_size * 100)) + '_' + 
 
 # Evaluate model
 loss_cnn2, acc_cnn = model_cnn.evaluate(x_test_padded, categorical_y_test, verbose=0)
+print('Naive Bayes Model: ', naive_score)
+print('Linear SVC Model: ', linear_svc_score)
 print("Trained model, accuracy: {:5.2f}%".format(100 * acc_cnn))
+
+
+
+y_pred_cnn = model_cnn.predict_classes(x_test_padded)
+
+from sklearn.metrics import confusion_matrix
+from sklearn.utils.multiclass import unique_labels
+
+y_test_label = []
+for counter in range(0, len(categorical_y_test)):
+    label = np.argmax(categorical_y_test[:][counter])
+    y_test_label.append(label)
+y_test_label = np.array(y_test_label)
+
+
+def plot_confusion_matrix(y_true, y_pred, classes,
+                          normalize=False,
+                          title=None,
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    # Only use the labels that appear in the data
+    classes = classes[unique_labels(y_true, y_pred)]
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        # print("Normalized confusion matrix")
+    # else:
+        # print('Confusion matrix, without normalization')
+
+    # print(cm)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    # print(im)
+    ax.figure.colorbar(im, ax=ax)
+    # We want to show all ticks...
+    ax.set(xticks=np.arange(cm.shape[1]),
+           yticks=np.arange(cm.shape[0]),
+           # ... and label them with the respective list entries
+           xticklabels=classes, yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    fig.tight_layout()
+    return ax
+
+
+# class_names = np.array([-2, -1, 0, 1, 2])
+class_names = np.array([0, 1, 2, -2, -1])
+np.set_printoptions(precision=2)
+
+y_test = y_test.astype(int)
+predict_nb = predict_nb.astype(int)
+predict_svm = predict_svm.astype(int)
+
+# Plot non-normalized confusion matrix
+plot_confusion_matrix(y_test, predict_nb, classes=class_names)
+plt.savefig('plots/NB_CM' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+# Plot normalized confusion matrix
+plot_confusion_matrix(y_test, predict_nb, classes=class_names, normalize=True)
+plt.savefig('plots/NB_CMn' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+
+# Plot non-normalized confusion matrix
+plot_confusion_matrix(y_test, predict_svm, classes=class_names)
+plt.savefig('plots/SVM_CM' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+# Plot normalized confusion matrix
+plot_confusion_matrix(y_test, predict_svm, classes=class_names, normalize=True)
+plt.savefig('plots/SVM_CMn' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+
+# Plot non-normalized confusion matrix
+plot_confusion_matrix(y_test_label, y_pred_cnn, classes=class_names)
+plt.savefig('plots/CNN_CM' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+
+# Plot normalized confusion matrix
+plot_confusion_matrix(y_test_label, y_pred_cnn, classes=class_names, normalize=True)
+plt.savefig('plots/CNN_CMn' + '_' + str(int(test_size * 100)) + '_' + str(test_num) + '.png')
+
+
+f1_NB = f1_score(y_test, predict_nb, average='weighted')
+print("F1 score of NB model: " + str(f1_NB))
+
+f1_SVM = f1_score(y_test, predict_svm, average='weighted')
+print("F1 score of SVM model: " + str(f1_SVM))
+
+f1_CNN = f1_score(y_test_label, y_pred_cnn, average='weighted')
+print("F1 score of KerasEmb CNN model: " + str(f1_CNN))

@@ -12,9 +12,8 @@ BASE_DIR = Path(__file__).resolve().parent
 print(str(BASE_DIR))
 
 
-def get_nb_classifier_result(comment, classifier, test_size):
-    # path = 'model/' + str(classifier) + '_classifier' + str(test_size) + ".pkl"
-    path = 'model/NB_classifier_' + str(test_size) + "_1.pkl"
+def get_nb_classifier_result(comment, test_size):
+    path = 'model/NB_classifier_' + str(test_size) + ".pkl"
     with open(BASE_DIR / path, 'rb') as fid:
         nb = cPickle.load(fid)
     result_table = nb.predict_proba([comment])[0]
@@ -27,9 +26,8 @@ def get_nb_classifier_result(comment, classifier, test_size):
     return dictionary
 
 
-def get_svm_classifier_result(comment, classifier, test_size):
-    # path = 'model/' + str(classifier) + '_classifier' + str(test_size) + ".pkl"
-    path = 'model/SVM_classifier_' + str(test_size) + "_1.pkl"
+def get_svm_classifier_result(comment, test_size):
+    path = 'model/SVM_classifier_' + str(test_size) + ".pkl"
     with open(BASE_DIR / path, 'rb') as fid:
         svm = cPickle.load(fid)
     result_table = svm.decision_function([comment])[0]
@@ -43,11 +41,10 @@ def get_svm_classifier_result(comment, classifier, test_size):
     return dictionary
 
 
-def get_cnn_classifier_result(comment, classifier, test_size):
-    # path = 'model/' + str(classifier) + '_classifier' + str(test_size) + ".h5"
-    path = 'model/CNN_classifier_' + str(test_size) + "_1.h5"
+def get_cnn_classifier_result(comment, test_size):
+    path = 'model/CNN_classifier_' + str(test_size) + ".h5"
     cnn = load_model(BASE_DIR / path)
-    path = 'model/tokenizer_' + str(test_size) + '_1.pkl'
+    path = 'model/tokenizer_' + str(test_size) + '.pkl'
     with open(BASE_DIR / path, 'rb') as handle:
         tokenizer = cPickle.load(handle)
 
@@ -103,9 +100,9 @@ def preprocess_comment(comment):
 def get_classes(comment, classifier, test_size):
     comment = preprocess_comment(comment)
     if classifier == 'NB':
-        return get_nb_classifier_result(comment, classifier, test_size)
+        return get_nb_classifier_result(comment, test_size)
     elif classifier == 'SVM':
-        return get_svm_classifier_result(comment, classifier, test_size)
+        return get_svm_classifier_result(comment, test_size)
     elif classifier == 'CNN':
-        return get_cnn_classifier_result(comment, classifier, test_size)
+        return get_cnn_classifier_result(comment, test_size)
     return "okok"
